@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project TRAVERSE — Sprint Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d1117;color:#e6edf3;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
+    button{cursor:pointer}
+    button:hover{opacity:0.85}
+    textarea{font-family:inherit;resize:vertical}
+    textarea:focus{outline:1px solid #388bfd}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:#161b22}
+    ::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const { createClient } = supabase;
+
+const db = createClient(
+  'https://wukcgtuwakaceiswatil.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1a2NndHV3YWthY2Vpc3dhdGlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4OTIwODIsImV4cCI6MjA5NzQ2ODA4Mn0.Qvaz_WbXGByL9JcoFE7m_hAvVS49XhRF0kJq3Yrh2mQ'
+);
+
+const TODAY    = new Date(2026, 5, 19);
+const DEADLINE = new Date(2026, 11, 31);
+const DAYS_LEFT = Math.ceil((DEADLINE - TODAY) / 86400000);
+const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+const parseDate = s => { const [m,d] = s.split(' '); return new Date(2026, MONTHS[m], parseInt(d)); };
+const isOverdue = (due, status) => status !== 'done' && parseDate(due) < TODAY;
+
+const STATUS = {
+  not_started: { label:'Not Started', color:'#6e7681', bg:'#1c2128', border:'#30363d' },
+  in_progress: { label:'In Progress', color:'#388bfd', bg:'#0d1f35', border:'#1f6feb' },
+  blocked:     { label:'Blocked',     color:'#f0883e', bg:'#2d1a00', border:'#bb4d00' },
+  done:        { label:'Done',        color:'#3fb950', bg:'#0d2e17', border:'#238636' },
+};
+const STATUS_KEYS = ['not_started','in_progress','blocked','done'];
+const PRI = {
+  CRITICAL: {bg:'#3d1a1a', color:'#f85149'},
+  HIGH:     {bg:'#2d2208', color:'#e3b341'},
+  MED:      {bg:'#1c2333', color:'#8b949e'},
+};
+
+const SPRINTS = [
+  { id:1, num:'S1', name:'Discovery & Vendor Engagement', period:'Jun 8 – Jul 31, 2026', status:'active',
+    gate:'ImageSoft confirmed · CTR680 read · Schema extraction complete · Charter signed · All stakeholders notified',
+    tasks:[
+      {id:'s1t1',  text:'Email Leelanau & Antrim County IT Directors',           due:'Jun 15', priority:'HIGH'},
+      {id:'s1t2',  text:'Notify Tyler Technologies / Sheriff IT',                due:'Jun 15', priority:'HIGH'},
+      {id:'s1t3',  text:'Schedule & deliver C-Suite briefing — expanded scope',  due:'Jun 20', priority:'HIGH'},
+      {id:'s1t4',  text:'Read CTR680 RPG source code (AS/400)',                  due:'Jun 20', priority:'HIGH'},
+      {id:'s1t5',  text:'Brief 13th Circuit Court Administrator',                due:'Jun 25', priority:'HIGH'},
+      {id:'s1t6',  text:'Contact ImageSoft — schedule endpoint feasibility call',due:'Jun 30', priority:'CRITICAL'},
+      {id:'s1t7',  text:'AS/400: IFS investigation & live data sampling',        due:'Jul 10', priority:'HIGH'},
+      {id:'s1t8',  text:'DSPFFD: schema extract all priority libraries',         due:'Jul 15', priority:'HIGH'},
+      {id:'s1t9',  text:'Revise project charter (15+ depts, 3-county scope)',    due:'Jul 15', priority:'HIGH'},
+      {id:'s1t10', text:'ImageSoft: confirm AWS S3/SFTP endpoint feasibility',   due:'Jul 20', priority:'CRITICAL'},
+      {id:'s1t11', text:'Discovery meetings: Finance, Payroll, Clerk, Drain',    due:'Jul 31', priority:'HIGH'},
+    ]},
+  { id:2, num:'S2', name:'AWS Infrastructure Build', period:'Aug 1 – Aug 31, 2026', status:'upcoming',
+    gate:'RDS, Glue, S3, Secrets Manager, CloudWatch provisioned · IAM & network complete · Glue→AS/400 JTOpen verified',
+    tasks:[
+      {id:'s2t1', text:'Provision Amazon RDS SQL Server (db.t3.large)',                due:'Aug 15', priority:'HIGH'},
+      {id:'s2t2', text:'Configure AWS Glue environment & Python Shell jobs',           due:'Aug 15', priority:'HIGH'},
+      {id:'s2t3', text:'Set up S3 buckets — staging + archive (Intelligent Tiering)', due:'Aug 15', priority:'HIGH'},
+      {id:'s2t4', text:'Configure Secrets Manager (AS/400 & DB credentials)',          due:'Aug 20', priority:'HIGH'},
+      {id:'s2t5', text:'Set up CloudWatch dashboards & pipeline alarms',               due:'Aug 20', priority:'HIGH'},
+      {id:'s2t6', text:'Configure IAM roles & VPC / security groups',                 due:'Aug 20', priority:'HIGH'},
+      {id:'s2t7', text:'Verify Glue → AS/400 JTOpen JDBC connectivity',               due:'Aug 25', priority:'HIGH'},
+      {id:'s2t8', text:'Issue RFQ for portal contractor',                              due:'Aug 25', priority:'MED'},
+      {id:'s2t9', text:'Sprint 2 gate verification — infrastructure ready',            due:'Aug 31', priority:'HIGH'},
+    ]},
+  { id:3, num:'S3', name:'Pipeline Dev & Unit Test', period:'Sep 1 – Oct 15, 2026', status:'upcoming',
+    gate:'All Glue jobs unit tested · Lambda CCEFEXT replacement built & tested · Portal in staging · Groups 1–2 migrated',
+    tasks:[
+      {id:'s3t1', text:'Build Glue jobs — Group 1 (Courts, FOC, Probation, Jury)', due:'Sep 20', priority:'HIGH'},
+      {id:'s3t2', text:'Build Glue jobs — Group 2 (Finance, Payroll)',             due:'Sep 30', priority:'HIGH'},
+      {id:'s3t3', text:'Build Lambda CCEFEXT replacement (EventBridge scheduler)', due:'Sep 30', priority:'CRITICAL'},
+      {id:'s3t4', text:'Unit test all Glue jobs — row count reconciliation',       due:'Oct 5',  priority:'HIGH'},
+      {id:'s3t5', text:'Deploy portal v1 to staging environment',                  due:'Oct 10', priority:'MED'},
+      {id:'s3t6', text:'Production load — Groups 1–2 to RDS',                      due:'Oct 10', priority:'HIGH'},
+      {id:'s3t7', text:'Sprint 3 gate verification',                               due:'Oct 15', priority:'HIGH'},
+    ]},
+  { id:4, num:'S4', name:'Parallel Run & Validation', period:'Oct 16 – Nov 30, 2026', status:'upcoming',
+    gate:'30-day ImageSoft parallel run complete · All dept UAT signed off · Groups 3–4 migrated · Go/No-Go documented',
+    tasks:[
+      {id:'s4t1', text:'Begin 30-day ImageSoft / MiFILE parallel run',                      due:'Oct 16', priority:'CRITICAL'},
+      {id:'s4t2', text:'Migrate Groups 3–4 (Clerk, Tax, Health, DPW, ASI, Public Safety)',  due:'Nov 1',  priority:'HIGH'},
+      {id:'s4t3', text:'Dept UAT — Group 1 (Courts, FOC, Probation, Jury)',                 due:'Nov 10', priority:'HIGH'},
+      {id:'s4t4', text:'Dept UAT — Group 2 (Finance, Payroll)',                             due:'Nov 15', priority:'HIGH'},
+      {id:'s4t5', text:'Confirm 30-day parallel run — zero missed deliveries',              due:'Nov 15', priority:'CRITICAL'},
+      {id:'s4t6', text:'Dept UAT — Groups 3–4 (Clerk, Tax, Health, DPW, ASI)',             due:'Nov 20', priority:'HIGH'},
+      {id:'s4t7', text:'Deploy historical data portal to production',                       due:'Nov 25', priority:'HIGH'},
+      {id:'s4t8', text:'Go/No-Go decision — document outcome',                              due:'Nov 30', priority:'CRITICAL'},
+    ]},
+  { id:5, num:'S5', name:'Cutover & Decommission', period:'Dec 1 – Dec 31, 2026', status:'upcoming',
+    gate:'Production cutover complete · All dept confirmations · Physical shutdown Dec 28–31 · Tape backup retired',
+    tasks:[
+      {id:'s5t1', text:'Cut over CCEFEXT Lambda to production',                  due:'Dec 5',  priority:'CRITICAL'},
+      {id:'s5t2', text:'Final dept confirmations — cutover authorization',       due:'Dec 10', priority:'HIGH'},
+      {id:'s5t3', text:'Monitor Lambda pipeline — first 2 weeks in production', due:'Dec 15', priority:'CRITICAL'},
+      {id:'s5t4', text:'Notify all stakeholders — final cutover date confirmed', due:'Dec 15', priority:'HIGH'},
+      {id:'s5t5', text:'Final data validation — all libraries confirmed in AWS', due:'Dec 20', priority:'HIGH'},
+      {id:'s5t6', text:'Retire tape backup process — document formally',         due:'Dec 20', priority:'HIGH'},
+      {id:'s5t7', text:'Begin AS/400 shutdown sequence',                         due:'Dec 28', priority:'CRITICAL'},
+      {id:'s5t8', text:'GTCOUNTY physically powered down',                       due:'Dec 31', priority:'CRITICAL'},
+      {id:'s5t9', text:'Decommission documentation complete',                    due:'Dec 31', priority:'HIGH'},
+    ]},
+];
+
+const MILESTONES = [
+  {id:'m1',  text:'Notify Leelanau & Antrim IT Directors of pipeline dependency', date:'Jun 15', sprint:1, critical:false},
+  {id:'m2',  text:'C-Suite briefing delivered; stakeholder kickoff scheduled',    date:'Jun 20', sprint:1, critical:false},
+  {id:'m3',  text:'13th Circuit Court Administrator briefed on CCEFEXT',         date:'Jun 25', sprint:1, critical:false},
+  {id:'m4',  text:'ImageSoft feasibility call scheduled',                        date:'Jun 30', sprint:1, critical:false},
+  {id:'m5',  text:'Schema extraction (DSPFFD) complete — all priority libraries',date:'Jul 15', sprint:1, critical:false},
+  {id:'m6',  text:'ImageSoft confirms AWS S3 or SFTP endpoint feasibility',      date:'Jul 20', sprint:1, critical:true},
+  {id:'m7',  text:'Sprint 1 Gate — all discovery & vendor engagement complete',  date:'Jul 31', sprint:1, critical:false},
+  {id:'m8',  text:'AWS infrastructure fully provisioned & connectivity verified',date:'Aug 31', sprint:2, critical:false},
+  {id:'m9',  text:'Sprint 3 Gate — all pipelines built & unit tested',           date:'Oct 15', sprint:3, critical:false},
+  {id:'m10', text:'Go/No-Go decision — 30-day parallel run complete, UAT signed',date:'Nov 30', sprint:4, critical:true},
+  {id:'m11', text:'Historical data portal live in production',                   date:'Nov 30', sprint:4, critical:false},
+  {id:'m12', text:'GTCOUNTY AS/400 physical shutdown — HARD DEADLINE',          date:'Dec 31', sprint:5, critical:true},
+];
+
+const getT = (state, id) => state[id] || { status:'not_started', note:'' };
+
+function App() {
+  const [tasks,     setTasks]     = useState({});
+  const [msState,   setMsState]   = useState({});
+  const [activeTab, setActiveTab] = useState(1);
+  const [expanded,  setExpanded]  = useState({});
+  const [loading,   setLoading]   = useState(true);
+  const [saved,     setSaved]     = useState(false);
+  const [error,     setError]     = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: td, error: te } = await db.from('tasks').select('*');
+        if (te) throw te;
+        const tm = {};
+        (td || []).forEach(t => { tm[t.id] = { status: t.status, note: t.note }; });
+        setTasks(tm);
+
+        const { data: md, error: me } = await db.from('milestones').select('*');
+        if (me) throw me;
+        const mm = {};
+        (md || []).forEach(m => { mm[m.id] = m.completed; });
+        setMsState(mm);
+      } catch(e) {
+        setError('Database connection error: ' + (e.message || e));
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 1500); };
+
+  const saveTaskStatus = (id, newStatus) => {
+    setTasks(prev => {
+      const curr = prev[id] || { status:'not_started', note:'' };
+      db.from('tasks')
+        .upsert({ id, status: newStatus, note: curr.note || '', updated_at: new Date().toISOString() })
+        .then(() => flash());
+      return { ...prev, [id]: { ...curr, status: newStatus } };
+    });
+  };
+
+  const saveTaskNote = (id, note) => {
+    setTasks(prev => {
+      const curr = prev[id] || { status:'not_started', note:'' };
+      db.from('tasks')
+        .upsert({ id, status: curr.status || 'not_started', note, updated_at: new Date().toISOString() })
+        .then(() => flash());
+      return { ...prev, [id]: { ...curr, note } };
+    });
+  };
+
+  const toggleMs = (id) => {
+    setMsState(prev => {
+      const newVal = !prev[id];
+      db.from('milestones')
+        .upsert({ id, completed: newVal, updated_at: new Date().toISOString() })
+        .then(() => flash());
+      return { ...prev, [id]: newVal };
+    });
+  };
+
+  const toggleExpanded = id => setExpanded(p => ({ ...p, [id]: !p[id] }));
+
+  const sprintStats = s => {
+    const done  = s.tasks.filter(t => getT(tasks, t.id).status === 'done').length;
+    const block = s.tasks.filter(t => getT(tasks, t.id).status === 'blocked').length;
+    const prog  = s.tasks.filter(t => getT(tasks, t.id).status === 'in_progress').length;
+    return { done, block, prog, total: s.tasks.length, pct: Math.round(done / s.tasks.length * 100) };
+  };
+
+  const totalTasks = SPRINTS.reduce((a, s) => a + s.tasks.length, 0);
+  const totalDone  = SPRINTS.reduce((a, s) => a + s.tasks.filter(t => getT(tasks, t.id).status === 'done').length, 0);
+  const overallPct = Math.round(totalDone / totalTasks * 100);
+  const msDone     = MILESTONES.filter(m => msState[m.id]).length;
+
+  if (loading) return (
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', color:'#8b949e'}}>
+      <div style={{textAlign:'center'}}>
+        <div style={{fontSize:28, marginBottom:10}}>⏳</div>
+        <div>Loading Project TRAVERSE…</div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:20}}>
+      <div style={{textAlign:'center', maxWidth:480}}>
+        <div style={{fontSize:28, marginBottom:10}}>⚠️</div>
+        <div style={{fontWeight:600, color:'#f85149', marginBottom:8}}>Database Connection Error</div>
+        <div style={{color:'#8b949e', fontSize:12}}>{error}</div>
+      </div>
+    </div>
+  );
+
+  const sprint = SPRINTS.find(s => s.id === activeTab);
+
+  return (
+    <div style={{minHeight:'100vh'}}>
+
+      {/* ── HEADER ── */}
+      <div style={{background:'#161b22', borderBottom:'1px solid #30363d', padding:'14px 20px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:10}}>
+          <div>
+            <div style={{fontSize:10, color:'#8b949e', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3}}>
+              Grand Traverse County · IT Administration · CONFIDENTIAL
+            </div>
+            <div style={{fontSize:19, fontWeight:700}}>
+              Project TRAVERSE
+              <span style={{color:'#8b949e', fontSize:12, fontWeight:400, marginLeft:10}}>AS/400 Sunset Migration</span>
+            </div>
+            <div style={{fontSize:10, color:'#8b949e', marginTop:3}}>
+              Sponsor: Nate Alger &nbsp;·&nbsp; PM: Cliff DuPuy &nbsp;·&nbsp; Leads: Scott Kurtzal · Jeremiah Priest
+            </div>
+          </div>
+          <div style={{display:'flex', gap:12, alignItems:'center'}}>
+            {saved && <span style={{fontSize:11, color:'#3fb950'}}>Saved ✓</span>}
+            <div style={{textAlign:'center', background:'#0d1117', border:'1px solid #30363d', borderRadius:8, padding:'7px 13px'}}>
+              <div style={{fontSize:24, fontWeight:700, color:'#f85149', lineHeight:1}}>{DAYS_LEFT}</div>
+              <div style={{fontSize:9, color:'#8b949e', letterSpacing:'0.08em', marginTop:2}}>DAYS LEFT</div>
+            </div>
+            <div style={{background:'#3d1a1a', border:'1px solid #f85149', borderRadius:6, padding:'5px 10px', fontSize:10, fontWeight:700, color:'#f85149'}}>
+              ⚠ RISK: HIGH
+            </div>
+          </div>
+        </div>
+        <div style={{marginTop:12}}>
+          <div style={{display:'flex', justifyContent:'space-between', fontSize:10, color:'#8b949e', marginBottom:4}}>
+            <span>OVERALL PROGRESS</span>
+            <span>{totalDone}/{totalTasks} tasks · {overallPct}% · {msDone}/{MILESTONES.length} milestones</span>
+          </div>
+          <div style={{background:'#21262d', borderRadius:3, height:6}}>
+            <div style={{background:'#1f6feb', borderRadius:3, height:6, width:`${overallPct}%`, transition:'width 0.4s'}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* ── IMAGESOFT BANNER ── */}
+      <div style={{background:'#2d0f0f', borderBottom:'2px solid #f85149', padding:'8px 20px', display:'flex', gap:10, alignItems:'flex-start'}}>
+        <span style={{fontSize:16, flexShrink:0}}>⚠️</span>
+        <div style={{fontSize:11, lineHeight:1.5}}>
+          <strong style={{color:'#f85149'}}>CRITICAL PATH — ImageSoft / MiFILE: </strong>
+          <span style={{color:'#ffa198'}}>Confirm AWS S3 or SFTP endpoint feasibility by <strong>July 20</strong>. Gates Sprint 3 Lambda design. CCEFEXT serves 13th Judicial Circuit — disruption halts e-filing across GTC, Leelanau &amp; Antrim. <strong>Schedule call before Jun 30.</strong></span>
+        </div>
+      </div>
+
+      {/* ── TABS ── */}
+      <div style={{background:'#161b22', borderBottom:'1px solid #30363d', padding:'0 20px', display:'flex', gap:2, overflowX:'auto'}}>
+        {SPRINTS.map(s => {
+          const st = sprintStats(s);
+          const active = activeTab === s.id;
+          return (
+            <button key={s.id} onClick={() => setActiveTab(s.id)} style={{
+              padding:'9px 13px', background:'none', border:'none', whiteSpace:'nowrap',
+              borderBottom: active ? '2px solid #1f6feb' : '2px solid transparent',
+              color: active ? '#e6edf3' : '#8b949e', fontSize:12,
+            }}>
+              <span style={{fontWeight:700, color: s.status==='active' ? '#3fb950' : undefined}}>{s.num}</span>
+              {s.status === 'active' && (
+                <span style={{marginLeft:5, background:'#0d2e17', color:'#3fb950', borderRadius:8, padding:'1px 6px', fontSize:9, fontWeight:600}}>ACTIVE</span>
+              )}
+              <span style={{marginLeft:6, color:'#8b949e', fontSize:10}}>{st.done}/{st.total}</span>
+              {st.block > 0 && <span style={{marginLeft:4, color:'#f0883e', fontSize:10}}>⊘{st.block}</span>}
+            </button>
+          );
+        })}
+        <button onClick={() => setActiveTab(0)} style={{
+          padding:'9px 13px', background:'none', border:'none', whiteSpace:'nowrap',
+          borderBottom: activeTab===0 ? '2px solid #1f6feb' : '2px solid transparent',
+          color: activeTab===0 ? '#e6edf3' : '#8b949e', fontSize:12,
+        }}>
+          Milestones <span style={{color:'#8b949e', fontSize:10}}>{msDone}/{MILESTONES.length}</span>
+        </button>
+      </div>
+
+      {/* ── BODY ── */}
+      <div style={{padding:'18px 20px', maxWidth:860}}>
+        {activeTab === 0
+          ? <MilestonesView state={msState} toggle={toggleMs} />
+          : sprint
+            ? <SprintView sprint={sprint} tasks={tasks} saveStatus={saveTaskStatus} saveNote={saveTaskNote}
+                          expanded={expanded} toggleExpanded={toggleExpanded} sprintStats={sprintStats} />
+            : null
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ── SPRINT VIEW ── */
+function SprintView({ sprint, tasks, saveStatus, saveNote, expanded, toggleExpanded, sprintStats }) {
+  const { done, block, prog, total, pct } = sprintStats(sprint);
+  const barColor = block > 0 ? '#f0883e' : pct === 100 ? '#238636' : '#1f6feb';
+
+  return (
+    <div>
+      <div style={{marginBottom:14}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', flexWrap:'wrap', gap:6}}>
+          <div>
+            <div style={{fontSize:16, fontWeight:600}}>{sprint.name}</div>
+            <div style={{fontSize:11, color:'#8b949e', marginTop:2}}>{sprint.period} · {total} tasks</div>
+          </div>
+          <div style={{display:'flex', gap:14, fontSize:12, alignItems:'center'}}>
+            {prog  > 0 && <span style={{color:'#388bfd'}}>● {prog} in progress</span>}
+            {block > 0 && <span style={{color:'#f0883e'}}>⊘ {block} blocked</span>}
+            <span style={{color:'#3fb950', fontWeight:600}}>✓ {done}/{total}</span>
+          </div>
+        </div>
+        <div style={{marginTop:8, background:'#21262d', borderRadius:4, height:7}}>
+          <div style={{background:barColor, borderRadius:4, height:7, width:`${pct}%`, transition:'width 0.4s'}}/>
+        </div>
+      </div>
+
+      <div style={{display:'flex', gap:12, marginBottom:12, flexWrap:'wrap', alignItems:'center'}}>
+        {Object.entries(STATUS).map(([k, s]) => (
+          <span key={k} style={{fontSize:10, color:s.color, display:'flex', alignItems:'center', gap:4}}>
+            <span style={{width:8, height:8, borderRadius:2, background:s.color, display:'inline-block'}}/>
+            {s.label}
+          </span>
+        ))}
+        <span style={{fontSize:10, color:'#484f58', marginLeft:4}}>· Click status to change · ✏ for notes</span>
+      </div>
+
+      <div style={{display:'flex', flexDirection:'column', gap:6}}>
+        {sprint.tasks.map(task => {
+          const t   = getT(tasks, task.id);
+          const st  = STATUS[t.status] || STATUS.not_started;
+          const pr  = PRI[task.priority] || PRI.MED;
+          const ov  = isOverdue(task.due, t.status);
+          const exp = !!expanded[task.id];
+          const hasNote = t.note && t.note.trim().length > 0;
+
+          return (
+            <div key={task.id} style={{
+              background: st.bg,
+              border: `1px solid ${ov && t.status !== 'done' ? '#da3633' : st.border}`,
+              borderLeft: `4px solid ${st.color}`,
+              borderRadius:7, overflow:'hidden',
+            }}>
+              <div style={{padding:'10px 12px', display:'flex', alignItems:'flex-start', gap:10}}>
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{
+                    fontSize:13, lineHeight:1.4,
+                    textDecoration: t.status === 'done' ? 'line-through' : 'none',
+                    color: t.status === 'done' ? '#6e7681' : '#e6edf3',
+                  }}>
+                    {task.text}
+                  </div>
+                  <div style={{display:'flex', gap:8, marginTop:5, alignItems:'center', flexWrap:'wrap'}}>
+                    <span style={{fontSize:10, color: ov ? '#f85149' : '#8b949e'}}>
+                      {ov ? '⚠ OVERDUE · ' : ''}Due {task.due}
+                    </span>
+                    <span style={{fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:9, background:pr.bg, color:pr.color}}>
+                      {task.priority}
+                    </span>
+                  </div>
+                  <div style={{display:'flex', gap:5, marginTop:8, flexWrap:'wrap'}}>
+                    {STATUS_KEYS.map(k => {
+                      const s = STATUS[k];
+                      const active = t.status === k;
+                      return (
+                        <button key={k} onClick={() => saveStatus(task.id, k)} style={{
+                          fontSize:10, padding:'3px 9px', borderRadius:10,
+                          border: `1px solid ${active ? s.color : '#30363d'}`,
+                          background: active ? s.bg : 'transparent',
+                          color: active ? s.color : '#6e7681',
+                          fontWeight: active ? 700 : 400,
+                        }}>
+                          {active && '● '}{s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!exp && hasNote && (
+                    <div style={{marginTop:6, fontSize:11, color:'#8b949e', fontStyle:'italic',
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:500}}>
+                      📝 {t.note}
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => toggleExpanded(task.id)} style={{
+                  background: hasNote ? '#1c2333' : 'transparent',
+                  border: `1px solid ${hasNote ? '#388bfd' : '#30363d'}`,
+                  borderRadius:6, padding:'4px 8px',
+                  color: hasNote ? '#388bfd' : '#6e7681', fontSize:13, flexShrink:0, marginTop:2,
+                }}>
+                  {exp ? '✏ ▲' : '✏'}
+                </button>
+              </div>
+              {exp && (
+                <div style={{borderTop:'1px solid #30363d', padding:'10px 12px', background:'#0d1117'}}>
+                  <div style={{fontSize:10, color:'#8b949e', marginBottom:6, fontWeight:600, letterSpacing:'0.08em'}}>
+                    NOTES / COMMENTS
+                  </div>
+                  <textarea
+                    defaultValue={t.note || ''}
+                    onBlur={e => saveNote(task.id, e.target.value)}
+                    placeholder="Add notes, blockers, context, or next steps…"
+                    rows={3}
+                    style={{
+                      width:'100%', background:'#161b22', border:'1px solid #30363d', borderRadius:5,
+                      color:'#e6edf3', fontSize:12, padding:'8px 10px', lineHeight:1.5, boxSizing:'border-box',
+                    }}
+                  />
+                  <div style={{fontSize:10, color:'#484f58', marginTop:4}}>Notes save when you click outside the text box.</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{marginTop:18, background:'#0d1f35', border:'1px solid #1f6feb', borderRadius:8, padding:'11px 15px'}}>
+        <div style={{fontSize:9, color:'#388bfd', fontWeight:700, letterSpacing:'0.1em', marginBottom:5}}>SPRINT {sprint.id} EXIT GATE</div>
+        <div style={{fontSize:11, color:'#8b949e', lineHeight:1.8}}>{sprint.gate}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── MILESTONES VIEW ── */
+function MilestonesView({ state, toggle }) {
+  const sprintColors = {1:'#388bfd', 2:'#a371f7', 3:'#e3b341', 4:'#3fb950', 5:'#f85149'};
+  return (
+    <div>
+      <div style={{fontSize:16, fontWeight:600, marginBottom:4}}>Key Milestones</div>
+      <div style={{fontSize:11, color:'#8b949e', marginBottom:14}}>Click a milestone to mark it complete.</div>
+      <div style={{display:'flex', flexDirection:'column', gap:6}}>
+        {MILESTONES.map(ms => {
+          const done = !!state[ms.id];
+          const ov   = isOverdue(ms.date, done ? 'done' : 'not_started');
+          const sc   = sprintColors[ms.sprint];
+          return (
+            <div key={ms.id} onClick={() => toggle(ms.id)} style={{
+              background: done ? '#0d2e17' : '#161b22',
+              border: `1px solid ${done ? '#238636' : ov ? '#da3633' : ms.critical ? '#da3633' : '#30363d'}`,
+              borderLeft: `4px solid ${done ? '#238636' : ov ? '#f85149' : ms.critical ? '#f85149' : '#30363d'}`,
+              borderRadius:7, padding:'11px 14px', cursor:'pointer',
+              display:'flex', alignItems:'center', gap:12, opacity: done ? 0.65 : 1, userSelect:'none',
+            }}>
+              <div style={{
+                width:17, height:17, borderRadius:'50%', flexShrink:0,
+                border: `2px solid ${done ? '#238636' : ms.critical ? '#f85149' : '#484f58'}`,
+                background: done ? '#238636' : 'transparent',
+                display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:11,
+              }}>
+                {done ? '✓' : ''}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13, lineHeight:1.4, textDecoration: done ? 'line-through' : 'none', color: done ? '#6e7681' : '#e6edf3'}}>
+                  {ms.text}
+                  {ms.critical && !done && (
+                    <span style={{marginLeft:8, fontSize:9, fontWeight:700, color:'#f85149', background:'#3d1a1a', padding:'1px 6px', borderRadius:8}}>
+                      CRITICAL GATE
+                    </span>
+                  )}
+                </div>
+                <div style={{display:'flex', gap:10, marginTop:4, alignItems:'center'}}>
+                  <span style={{fontSize:10, color: ov && !done ? '#f85149' : '#8b949e'}}>
+                    {ov && !done ? '⚠ OVERDUE · ' : ''}{ms.date}
+                  </span>
+                  <span style={{fontSize:9, fontWeight:600, padding:'1px 7px', borderRadius:8, background:'#21262d', color:sc}}>
+                    Sprint {ms.sprint}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
